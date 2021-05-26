@@ -166,8 +166,7 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
 
     if not overwrite_existing:
         print("number of cases:", len(list_of_lists))
-        # if save_npz=True then we should also check for missing npz files
-        not_done_idx = [i for i, j in enumerate(cleaned_output_files) if (not isfile(j)) or (save_npz and not isfile(j[:-7] + '.npz'))]
+        not_done_idx = [i for i, j in enumerate(cleaned_output_files) if not isfile(j)]
 
         cleaned_output_files = [cleaned_output_files[i] for i in not_done_idx]
         list_of_lists = [list_of_lists[i] for i in not_done_idx]
@@ -213,10 +212,9 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
         softmax = []
         for p in params:
             trainer.load_checkpoint_ram(p, False)
-            softmax.append(trainer.predict_preprocessed_data_return_seg_and_softmax(
-                d, do_mirroring=do_tta, mirror_axes=trainer.data_aug_params['mirror_axes'], use_sliding_window=True,
-                step_size=step_size, use_gaussian=True, all_in_gpu=all_in_gpu,
-                mixed_precision=mixed_precision)[1][None])
+            softmax.append(trainer.predict_preprocessed_data_return_seg_and_softmax(d, do_tta, trainer.data_aug_params[
+                'mirror_axes'], True, step_size=step_size, use_gaussian=True, all_in_gpu=all_in_gpu,
+                                                                                    mixed_precision=mixed_precision)[1][None])
 
         softmax = np.vstack(softmax)
         softmax_mean = np.mean(softmax, 0)
@@ -360,9 +358,8 @@ def predict_cases_fast(model, list_of_lists, output_filenames, folds, num_thread
         for i, p in enumerate(params):
             trainer.load_checkpoint_ram(p, False)
 
-            res = trainer.predict_preprocessed_data_return_seg_and_softmax(d, do_mirroring=do_tta,
-                                                                           mirror_axes=trainer.data_aug_params['mirror_axes'],
-                                                                           use_sliding_window=True,
+            res = trainer.predict_preprocessed_data_return_seg_and_softmax(d, do_tta,
+                                                                           trainer.data_aug_params['mirror_axes'], True,
                                                                            step_size=step_size, use_gaussian=True,
                                                                            all_in_gpu=all_in_gpu,
                                                                            mixed_precision=mixed_precision)
@@ -482,9 +479,8 @@ def predict_cases_fastest(model, list_of_lists, output_filenames, folds, num_thr
 
         for i, p in enumerate(params):
             trainer.load_checkpoint_ram(p, False)
-            res = trainer.predict_preprocessed_data_return_seg_and_softmax(d, do_mirroring=do_tta,
-                                                                           mirror_axes=trainer.data_aug_params['mirror_axes'],
-                                                                           use_sliding_window=True,
+            res = trainer.predict_preprocessed_data_return_seg_and_softmax(d, do_tta,
+                                                                           trainer.data_aug_params['mirror_axes'], True,
                                                                            step_size=step_size, use_gaussian=True,
                                                                            all_in_gpu=all_in_gpu,
                                                                            mixed_precision=mixed_precision)

@@ -24,13 +24,12 @@ import argparse
 
 def collect_cv_niftis(cv_folder: str, output_folder: str, validation_folder_name: str = 'validation_raw',
                       folds: tuple = (0, 1, 2, 3, 4)):
-    validation_raw_folders = [join(cv_folder, "fold_%d" % i, validation_folder_name) for i in folds]
-    exist = [isdir(i) for i in validation_raw_folders]
+    folders_folds = [join(cv_folder, "fold_%d" % i) for i in folds]
 
-    if not all(exist):
-        raise RuntimeError("some folds are missing. Please run the full 5-fold cross-validation. "
-                           "The following folds seem to be missing: %s" %
-                           [i for j, i in enumerate(folds) if not exist[j]])
+    assert all([isdir(i) for i in folders_folds]), "some folds are missing"
+
+    # now for each fold, read the postprocessing json. this will tell us what the name of the validation folder is
+    validation_raw_folders = [join(cv_folder, "fold_%d" % i, validation_folder_name) for i in folds]
 
     # now copy all raw niftis into cv_niftis_raw
     maybe_mkdir_p(output_folder)
@@ -54,17 +53,15 @@ def consolidate_folds(output_folder_base, validation_folder_name: str = 'validat
     :return:
     """
     output_folder_raw = join(output_folder_base, "cv_niftis_raw")
-    if isdir(output_folder_raw):
-        shutil.rmtree(output_folder_raw)
-
     output_folder_gt = join(output_folder_base, "gt_niftis")
     collect_cv_niftis(output_folder_base, output_folder_raw, validation_folder_name,
                       folds)
 
-    num_niftis_gt = len(subfiles(join(output_folder_base, "gt_niftis"), suffix='.nii.gz'))
+    num_niftis_gt = len(subfiles(join(output_folder_base, "gt_niftis")))
     # count niftis in there
-    num_niftis = len(subfiles(output_folder_raw, suffix='.nii.gz'))
+    num_niftis = len(subfiles(output_folder_raw))
     if num_niftis != num_niftis_gt:
+        shutil.rmtree(output_folder_raw)
         raise AssertionError("If does not seem like you trained all the folds! Train all folds first!")
 
     # load a summary file so that we can know what class labels to expect
